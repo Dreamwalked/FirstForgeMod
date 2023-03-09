@@ -1,0 +1,18 @@
+[
+  {
+	"modid": "coolfejlipmod",
+	"name": "Skyblock tingy super cool",
+	"description": "This is a mod that adds a bunch of cool stuff to hypixel skyblock.",
+	"version": "1.0.2",
+	"mcversion": "1.8.9",
+	"url": "",
+	"updateUrl": "",
+	"authorList": [
+	  "Fejlip#3070"
+	],
+	"credits": "",
+	"logoFile": "",
+	"screenshots": [],
+	"dependencies": []
+  }
+]
