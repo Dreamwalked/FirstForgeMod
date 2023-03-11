@@ -3,8 +3,6 @@ package com.fejlip.features;
 import com.fejlip.Macro;
 import com.fejlip.helpers.Helpers;
 import com.fejlip.helpers.QueueItem;
-import net.minecraft.client.Minecraft;
-import net.minecraft.util.ChatComponentText;
 import java.io.PrintStream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

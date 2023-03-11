@@ -12,17 +12,16 @@ import net.minecraftforge.client.event.ClientChatReceivedEvent;
 import net.minecraftforge.client.event.GuiScreenEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-
+import net.minecraft.util.EnumChatFormatting;
 public class AutoBuy {
     private int lastAuctionBought = 0;
     private final ScheduledExecutorService service;
-    private int earlierWindowId = 0;
-    private boolean soon = false;
-    private boolean fastBed = false;
 
+    private String apikey;
     public AutoBuy() {
         this.service = Executors.newSingleThreadScheduledExecutor();
     }
@@ -38,19 +37,31 @@ public class AutoBuy {
                 if (name.contains("BIN Auction View")) {
                     ItemStack stack = chest.getSlot(31).getStack();
                     if (stack != null) {
+                        String lore = EnumChatFormatting.getTextWithoutFormattingCodes(chest.getSlot(13).getStack().getTagCompound().getCompoundTag("display").toString());
+                        if (lore.contains("Seller: ")){
+                            Pattern pattern;
+                            if(lore.contains("Seller: [")){
+                                pattern = Pattern.compile("Seller:\\s\\[\\w*\\+*\\]\\s*(\\w+)");
+                            }
+                            else{
+                                pattern = Pattern.compile("Seller:\\s(\\w+)");
+                            }
+                            Matcher matcher = pattern.matcher(lore);
+                            if (matcher.find()) {
+                                String playerName = matcher.group(1);
+                                Helpers.clickableMessage("§2Sellers AH: Auction sold by "+playerName, "/ah "+playerName);
+                            } else {
+                                Helpers.sendDebugMessage("Player name not found!");
+                            }
+                        }
                         if (Items.feather != stack.getItem()) {
-                            if (Items.potato == stack.getItem()) {
-                                Helpers.sendDebugMessage("Potato auction found, skipping...");
-                                soon = false;
-                                fastBed = false;
-                                Minecraft.getMinecraft().thePlayer.closeScreen();
-                                Macro.getInstance().getQueue().setRunning(false);
-                            } else if (Items.bed == stack.getItem()) {
-                                ItemStack bedCountdown = chest.getSlot(13).getStack();
+                              if (Items.bed == stack.getItem()) {
+                                  //ItemStack bedCountdown = chest.getSlot(13).getStack();
 //                                if (!fastBed && !bedCountdown.getTagCompound().getCompoundTag("display").toString().contains("Can buy in: §eSoon!"))
 //                                    fastBed = true;
 //                                if (fastBed) {
-                                if (bedCountdown.getTagCompound().getCompoundTag("display").toString().contains("Can buy in: §eSoon!") && !soon) {
+
+                              /*  if (bedCountdown.getTagCompound().getCompoundTag("display").toString().contains("Can buy in: §eSoon!") && !soon) {
                                     soon = true;
                                     Helpers.sendDebugMessage("Soon started!");
                                     Thread thread = new Thread(() -> {
@@ -71,7 +82,28 @@ public class AutoBuy {
                                         }
                                     });
                                     thread.start();
-                                }
+                                }*/
+                              }
+                                  else if (Items.potato == stack.getItem()) {
+                                  if (lore.contains("Buyer: ")){
+                                      Pattern pattern;
+                                      if(lore.contains("Buyer: [")){
+                                          pattern = Pattern.compile("Buyer:\\s\\[\\w*\\+*\\]\\s*(\\w+)");
+                                      }
+                                      else{
+                                          pattern = Pattern.compile("Buyer:\\s(\\w+)");
+                                      }
+                                      Matcher matcher = pattern.matcher(lore);
+                                      if (matcher.find()) {
+                                          String playerName = matcher.group(1);
+                                          Helpers.sendDebugMessage("§eAuction bought by "+playerName);
+                                      } else {
+                                          Helpers.sendDebugMessage("Player name not found!");
+                                      }
+                                  }
+                                    Minecraft.getMinecraft().thePlayer.closeScreen();
+                                    Macro.getInstance().getQueue().setRunning(false);
+                                  }
 //                                } else {
 //                                    if (bedCountdown.getTagCompound().getCompoundTag("display").toString().contains("Can buy in: §eSoon!") && !soon)
 //                                        soon = true;
@@ -87,54 +119,45 @@ public class AutoBuy {
                             }
                         }
                     }
-                } else if (name.contains("Confirm Purchase")) {
+                else if (name.contains("Confirm Purchase")) {
                     if (chest.windowId != this.lastAuctionBought) {
-                        clickConfirm(chest.windowId);
+                        Helpers.sendClickPacket(chest.windowId, 11, 0);
                         this.lastAuctionBought = chest.windowId;
                     }
                 }
+                }
             }
         }
-    }
 
     @SubscribeEvent
     public void onClientChatMessage(ClientChatReceivedEvent event) {
         String str = event.message.getUnformattedText();
         if (str.contains("Putting coins in")) {
-            soon = false;
-            fastBed = false;
             Macro.getInstance().getStopWatch().stop();
             Helpers.sendDebugMessage("Bought auction in " + Macro.getInstance().getStopWatch().getNanoTime() / 1000000 + "ms");
             Macro.getInstance().getQueue().setRunning(false);
         }
+        else if(str.contains("Your new API key is ")){
+            Pattern pattern = Pattern.compile("Your new API key is (.+)");
+            Matcher matcher = pattern.matcher(str);
+            if (matcher.find()) {
+                apikey = matcher.group(1);
+                Helpers.sendDebugMessage("Your API key has been set to: "+apikey);
+            } else {
+                Helpers.sendDebugMessage("API key not found in the message!");
+            }
+        }
         if (Macro.getInstance().getQueue().isRunning()) {
-            boolean isDebug = Macro.getInstance().getConfig().isDebug();
             if (str.contains("This auction wasn't found") || str.contains("There was an error with the auction")) {
-                soon = false;
-                fastBed = false;
                 Helpers.sendDebugMessage("Error or not found");
                 Macro.getInstance().getQueue().setRunning(false);
             }
             if (str.contains("You don't have enough coins to afford this bid!")) {
-                soon = false;
-                fastBed = false;
                 Helpers.sendDebugMessage("Not enough coins");
                 Minecraft.getMinecraft().thePlayer.closeScreen();
                 Macro.getInstance().getQueue().setRunning(false);
             }
         }
-    }
-
-    private void clickNugget(int id) {
-        click(id, 31);
-    }
-
-    private void clickConfirm(int id) {
-        click(id, 11);
-    }
-
-    private void click(int id, int index) {
-        (Minecraft.getMinecraft()).playerController.windowClick(id, index, 0, 3, Minecraft.getMinecraft().thePlayer);
     }
 }
 
