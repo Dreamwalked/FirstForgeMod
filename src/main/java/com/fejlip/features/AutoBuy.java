@@ -54,8 +54,9 @@ public class AutoBuy {
                                           String price = matcher.group(1);
                                           price = price.replaceAll(",", "");
                                           Helpers.sendDebugMessage("§eAuction price is " + price);
-                                          if (apikey != null) {
+                                          if (apikey != null && !playerName.contains("Refreshing")) {
                                               Helpers.checkAuctions(Helpers.getuuid(playerName), itemName, Integer.parseInt(price), apikey, chest.windowId);
+                                              checkItem = false;
                                           }
                                           else{
                                               Helpers.sendDebugMessage("§cAPI key not set!");
@@ -63,7 +64,6 @@ public class AutoBuy {
                                       } else {
                                           Helpers.sendDebugMessage("Price not found!");
                                       }
-                                        checkItem = false;
                                   }
                               }
                                   else if (Items.potato == stack.getItem()) {
@@ -76,7 +76,7 @@ public class AutoBuy {
                                           pattern = Pattern.compile("Buyer:\\s(\\w+)");
                                       }
                                       Matcher matcher = pattern.matcher(lore);
-                                      if (matcher.find()) {
+                                      if (matcher.find() && !playerName.contains("Refreshing")){
                                           String playerName1 = matcher.group(1);
                                           Helpers.sendDebugMessage("§eAuction bought by "+playerName1);
                                           checkSold = false;
