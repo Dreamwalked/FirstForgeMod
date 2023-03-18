@@ -5,16 +5,13 @@ public class Config {
     private boolean autoOpenEnabled;
     private boolean debug;
     private int bedClickDelay;
-    private int bedInitialDelay;
-
-    private int bedClickAmount;
+    private int bedInitialDelay ;
 
     public Config() {
         this.autoBuyEnabled = false;
         this.autoOpenEnabled = false;
-        this.bedInitialDelay = 2300;
-        this.bedClickDelay = 70;
-        this.bedClickAmount = 5;
+        this.bedInitialDelay = 90;
+        this.bedClickDelay = 15;
         this.debug = false;
 
 
@@ -52,14 +49,6 @@ public class Config {
 
     public void setBedInitialDelay(int bedInitialDelay) {
         this.bedInitialDelay = bedInitialDelay;
-    }
-
-    public int getBedClickAmount() {
-        return bedClickAmount;
-    }
-
-    public void setBedClickAmount(int bedClickAmount) {
-        this.bedClickAmount = bedClickAmount;
     }
 
     public boolean isDebug() {

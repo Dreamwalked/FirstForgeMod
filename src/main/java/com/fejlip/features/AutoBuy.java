@@ -14,21 +14,20 @@ import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import net.minecraft.util.EnumChatFormatting;
+
+
 public class AutoBuy {
     private int lastAuctionBought = 0;
-    private final ScheduledExecutorService service;
-
+    private boolean getName = true;
+    private boolean checkItem = true;
+    private boolean checkSold = true;
+    private String playerName;
     private String apikey;
-    public AutoBuy() {
-        this.service = Executors.newSingleThreadScheduledExecutor();
-    }
 
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
-    public void onInventoryRendering(GuiScreenEvent.DrawScreenEvent.Post post) {
+    public void onInventoryRendering(GuiScreenEvent.DrawScreenEvent.Post post) throws Exception {
         Config config = Macro.getInstance().getConfig();
         if (config != null && config.isAutoBuyEnabled() && (post.gui instanceof GuiChest)) {
             ContainerChest chest = (ContainerChest) ((GuiChest) post.gui).inventorySlots;
@@ -38,54 +37,37 @@ public class AutoBuy {
                     ItemStack stack = chest.getSlot(31).getStack();
                     if (stack != null) {
                         String lore = EnumChatFormatting.getTextWithoutFormattingCodes(chest.getSlot(13).getStack().getTagCompound().getCompoundTag("display").toString());
-                        if (lore.contains("Seller: ")){
-                            Pattern pattern;
-                            if(lore.contains("Seller: [")){
-                                pattern = Pattern.compile("Seller:\\s\\[\\w*\\+*\\]\\s*(\\w+)");
-                            }
-                            else{
-                                pattern = Pattern.compile("Seller:\\s(\\w+)");
-                            }
-                            Matcher matcher = pattern.matcher(lore);
-                            if (matcher.find()) {
-                                String playerName = matcher.group(1);
-                                Helpers.clickableMessage("§2Sellers AH: Auction sold by "+playerName, "/ah "+playerName);
-                            } else {
-                                Helpers.sendDebugMessage("Player name not found!");
+                        if(getName) {
+                            playerName = Helpers.getPlayer(lore);
+                            if(playerName != null && !playerName.contains("Refreshing")){
+                                Helpers.clickableMessage("§2Sellers AH: Auction sold by " + playerName, "/ah " + playerName);
+                                getName = false;
                             }
                         }
                         if (Items.feather != stack.getItem()) {
                               if (Items.bed == stack.getItem()) {
-                                  //ItemStack bedCountdown = chest.getSlot(13).getStack();
-//                                if (!fastBed && !bedCountdown.getTagCompound().getCompoundTag("display").toString().contains("Can buy in: §eSoon!"))
-//                                    fastBed = true;
-//                                if (fastBed) {
-
-                              /*  if (bedCountdown.getTagCompound().getCompoundTag("display").toString().contains("Can buy in: §eSoon!") && !soon) {
-                                    soon = true;
-                                    Helpers.sendDebugMessage("Soon started!");
-                                    Thread thread = new Thread(() -> {
-                                        try {
-                                            int clickAmount = config.getBedClickAmount();
-                                            Thread.sleep(Macro.getInstance().getConfig().getBedInitialDelay());
-                                            for (int j = 0; (j < clickAmount && soon); j++) {
-                                                Helpers.sendDebugMessage("Bed clicked");
-                                                Helpers.sendClickPacket(chest.windowId, 31, 0);
-                                                Helpers.sendClickPacket(chest.windowId + 1, 11, 0);
-                                                if (j == clickAmount) {
-                                                    soon = false;
-                                                }
-                                                Thread.sleep(Macro.getInstance().getConfig().getBedClickDelay());
-                                            }
-                                        } catch (InterruptedException e) {
-                                            e.printStackTrace();
-                                        }
-                                    });
-                                    thread.start();
-                                }*/
+                                  if (checkItem) {
+                                      String itemName = EnumChatFormatting.getTextWithoutFormattingCodes(chest.getSlot(13).getStack().getDisplayName());
+                                      Pattern pattern = Pattern.compile("Buy it now: ([\\d,]+)");
+                                      Matcher matcher = pattern.matcher(lore);
+                                      if (matcher.find()) {
+                                          String price = matcher.group(1);
+                                          price = price.replaceAll(",", "");
+                                          Helpers.sendDebugMessage("§eAuction price is " + price);
+                                          if (apikey != null) {
+                                              Helpers.checkAuctions(Helpers.getuuid(playerName), itemName, Integer.parseInt(price), apikey, chest.windowId);
+                                          }
+                                          else{
+                                              Helpers.sendDebugMessage("§cAPI key not set!");
+                                          }
+                                      } else {
+                                          Helpers.sendDebugMessage("Price not found!");
+                                      }
+                                        checkItem = false;
+                                  }
                               }
                                   else if (Items.potato == stack.getItem()) {
-                                  if (lore.contains("Buyer: ")){
+                                  if (lore.contains("Buyer: ") && checkSold){
                                       Pattern pattern;
                                       if(lore.contains("Buyer: [")){
                                           pattern = Pattern.compile("Buyer:\\s\\[\\w*\\+*\\]\\s*(\\w+)");
@@ -95,27 +77,28 @@ public class AutoBuy {
                                       }
                                       Matcher matcher = pattern.matcher(lore);
                                       if (matcher.find()) {
-                                          String playerName = matcher.group(1);
-                                          Helpers.sendDebugMessage("§eAuction bought by "+playerName);
+                                          String playerName1 = matcher.group(1);
+                                          Helpers.sendDebugMessage("§eAuction bought by "+playerName1);
+                                          checkSold = false;
                                       } else {
                                           Helpers.sendDebugMessage("Player name not found!");
                                       }
                                   }
-                                    Minecraft.getMinecraft().thePlayer.closeScreen();
                                     Macro.getInstance().getQueue().setRunning(false);
-                                  }
-//                                } else {
-//                                    if (bedCountdown.getTagCompound().getCompoundTag("display").toString().contains("Can buy in: §eSoon!") && !soon)
-//                                        soon = true;
-//                                    int bedDelay = config.getBedClickDelay();
-//                                    this.service.scheduleWithFixedDelay(() -> {
-//                                        if (soon) {
-//                                            Helpers.sendDebugMessage("Normal Bed clicked");
-//                                            Helpers.sendClickPacket(chest.windowId, 31, 0);
-//                                            Helpers.sendClickPacket(chest.windowId + 1, 11, 0);
-//                                        }
-//                                    }, 1L, 150, TimeUnit.MILLISECONDS);
-//                                }
+                                    Thread thread = new Thread(() -> {
+                                        try {
+                                            Thread.sleep(250);
+                                            if(chest.getSlot(31).getStack().getItem() == Items.potato) {
+                                                Minecraft.getMinecraft().thePlayer.closeScreen();
+                                                Helpers.sendDebugMessage("§cAuction already bought! Closing GUI...");
+                                            }
+                                        } catch (InterruptedException e) {
+                                            e.printStackTrace();
+                                        }
+                                    });
+                                    thread.start();
+
+                              }
                             }
                         }
                     }
@@ -124,6 +107,11 @@ public class AutoBuy {
                         Helpers.sendClickPacket(chest.windowId, 11, 0);
                         this.lastAuctionBought = chest.windowId;
                     }
+                }
+                else{
+                    getName = true;
+                    checkItem = true;
+                    checkSold = true;
                 }
                 }
             }

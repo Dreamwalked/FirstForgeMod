@@ -86,20 +86,6 @@ public class MacroCommand extends CommandBase {
                     Helpers.sendChatMessage("Invalid bed initial delay!");
                 }
                 break;
-            case "bedAmount":
-            case "bedamount":
-                if (args.length == 1) {
-                    Helpers.sendChatMessage("Invalid arguments for command bed!");
-                    return;
-                }
-                try {
-                    int bedAmount = Integer.parseInt(args[1]);
-                    config.setBedClickAmount(bedAmount);
-                    Helpers.sendChatMessage("Bed click amount: " + bedAmount);
-                } catch (NumberFormatException e) {
-                    Helpers.sendChatMessage("Invalid bed click amount!");
-                }
-                break;
             case "Debug":
             case "debug":
                 boolean debug = config.toggleDebug();

@@ -10,6 +10,7 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S2DPacketOpenWindow;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.network.FMLNetworkEvent;
+import com.fejlip.features.AutoBuy;
 
 @ChannelHandler.Sharable
 public class PacketListener extends SimpleChannelInboundHandler<Packet> {
@@ -30,7 +31,6 @@ public class PacketListener extends SimpleChannelInboundHandler<Packet> {
                         Macro.getInstance().getStopWatch().reset();
                         Macro.getInstance().getStopWatch().start();
                         Helpers.sendClickPacket(packetOpenWindow.getWindowId(), 31, 0);
-
                         Helpers.sendClickPacket(packetOpenWindow.getWindowId() + 1, 11, 0);
                     }
                 }
