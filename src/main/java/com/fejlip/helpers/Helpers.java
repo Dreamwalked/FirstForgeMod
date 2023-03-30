@@ -69,9 +69,8 @@ public final class Helpers {
         JSONArray auctions = json.getJSONArray("auctions");
         for (int i = 0; i < auctions.length(); i++) {
             JSONObject auction = auctions.getJSONObject(i);
-            String item = auction.getString("item_name").replaceAll("âœª", "✪");
             int bid = auction.getInt("starting_bid");
-            if (item.equals(itemName) && bid == startingBid) {
+            if (bid == startingBid) {
                 long now = System.currentTimeMillis();
                 long purchasable = auction.getLong("start")+20000;
                 long remaining = purchasable-now;
